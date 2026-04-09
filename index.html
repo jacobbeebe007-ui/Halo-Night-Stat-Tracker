@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Halo Night Stat Tracker</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="page-header">
+      <h1>Halo Night Stat Tracker</h1>
+      <p>Track events, submit games, and view cumulative player stats.</p>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <h2>Event Management</h2>
+        <div class="form-row">
+          <label for="eventNameInput">New Event Name</label>
+          <input id="eventNameInput" type="text" placeholder="e.g. Orbital Drop Night" />
+          <button id="createEventBtn">Create Event</button>
+        </div>
+
+        <div class="form-row">
+          <label for="eventSelect">Current Event</label>
+          <select id="eventSelect"></select>
+          <button id="renameEventBtn" class="secondary">Rename</button>
+          <button id="deleteEventBtn" class="danger">Delete Event</button>
+        </div>
+
+        <div class="form-row">
+          <label for="gameNo">Next Game #</label>
+          <input id="gameNo" type="number" min="1" readonly />
+          <button id="submitGameBtn">Submit Game</button>
+          <button id="clearEntryBtn" class="secondary">Clear Entry</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Roster & Game Entry</h2>
+        <p class="hint">Edit player names, fill out stats, then submit the game.</p>
+        <div class="table-wrap">
+          <table id="entryTable">
+            <thead>
+              <tr>
+                <th>Player Name</th>
+                <th>Kills</th>
+                <th>Assists</th>
+                <th>Deaths</th>
+                <th>Placing</th>
+                <th>Points (auto)</th>
+                <th>Time Obj (sec)</th>
+                <th>Captures</th>
+              </tr>
+            </thead>
+            <tbody id="entryBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Submitted Games</h2>
+        <p class="hint">Edit or delete old games if needed.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Game #</th>
+                <th>Date</th>
+                <th>Players</th>
+                <th>Total Points</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="gamesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Results Table (Cumulative)</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Total Kills</th>
+                <th>Total Assists</th>
+                <th>Total Deaths</th>
+                <th>K/D</th>
+                <th>KDA (A=0.3)</th>
+                <th>Captures</th>
+                <th>Obj Time (sec)</th>
+                <th>Placings</th>
+                <th>Total Points</th>
+              </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card footer-tools">
+        <h2>Data Tools</h2>
+        <div class="tool-buttons">
+          <button id="exportEventExcelBtn" class="secondary">Export Event (Excel)</button>
+          <button id="exportBtn" class="secondary">Export JSON</button>
+          <label class="import-label">
+            Import JSON
+            <input id="importInput" type="file" accept="application/json" hidden />
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
