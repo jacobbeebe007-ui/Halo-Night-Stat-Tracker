@@ -6,6 +6,8 @@ A lightweight, client-side web app for tracking Halo custom night/player stats a
 
 - Create, rename, switch, and delete events.
 - Enter game stats for each player and submit as `Game #N`.
+- Points are auto-allocated from placing:
+  - 1st = 9, 2nd = 7, 3rd = 5, 4th = 3, 5th-8th = 1
 - Edit old submitted games by loading them back into the entry table.
 - Delete games and automatically recalculate cumulative stats.
 - Results table with:
@@ -16,6 +18,9 @@ A lightweight, client-side web app for tracking Halo custom night/player stats a
   - placing summary (1st to 8th)
   - total points
 - Export/import full dataset as JSON.
+- Export the active event to an Excel-compatible `.xls` file with:
+  - `Game Data` sheet (all submitted rows)
+  - `Results` sheet (cumulative totals)
 - Automatic browser persistence using `localStorage`.
 
 ## Run locally

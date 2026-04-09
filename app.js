@@ -16,6 +16,16 @@ const defaultRoster = [
 ];
 
 const placingOptions = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th'];
+const placingPoints = {
+  '1st': 9,
+  '2nd': 7,
+  '3rd': 5,
+  '4th': 3,
+  '5th': 1,
+  '6th': 1,
+  '7th': 1,
+  '8th': 1
+};
 
 const state = loadState();
 
@@ -31,6 +41,7 @@ const elements = {
   entryBody: document.getElementById('entryBody'),
   gamesBody: document.getElementById('gamesBody'),
   resultsBody: document.getElementById('resultsBody'),
+  exportEventExcelBtn: document.getElementById('exportEventExcelBtn'),
   exportBtn: document.getElementById('exportBtn'),
   importInput: document.getElementById('importInput')
 };
@@ -48,6 +59,7 @@ function wireEvents() {
     clearEntryStats();
     renderEntryTable();
   });
+  elements.exportEventExcelBtn.addEventListener('click', exportCurrentEventExcel);
   elements.exportBtn.addEventListener('click', exportData);
   elements.importInput.addEventListener('change', importData);
 }
@@ -130,6 +142,7 @@ function renderEntryTable() {
   elements.entryBody.innerHTML = '';
 
   current.entryRows.forEach((row, idx) => {
+    row.points = getPointsForPlacing(row.placing);
     const tr = document.createElement('tr');
 
     tr.appendChild(createEditableCell(row.player, (value) => {
@@ -138,8 +151,13 @@ function renderEntryTable() {
     tr.appendChild(createNumericCell(row.kills, (value) => (row.kills = value)));
     tr.appendChild(createNumericCell(row.assists, (value) => (row.assists = value)));
     tr.appendChild(createNumericCell(row.deaths, (value) => (row.deaths = value)));
-    tr.appendChild(createPlacingCell(row.placing, (value) => (row.placing = value)));
-    tr.appendChild(createNumericCell(row.points, (value) => (row.points = value)));
+    tr.appendChild(
+      createPlacingCell(row.placing, (value) => {
+        row.placing = value;
+        row.points = getPointsForPlacing(value);
+      })
+    );
+    tr.appendChild(createAutoPointsCell(row.points));
     tr.appendChild(createNumericCell(row.timeObjSec, (value) => (row.timeObjSec = value)));
     tr.appendChild(createNumericCell(row.captures, (value) => (row.captures = value)));
 
@@ -199,6 +217,18 @@ function createNumericCell(value, onChange) {
   return td;
 }
 
+function createAutoPointsCell(value) {
+  const td = document.createElement('td');
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'entry-input';
+  input.value = Number(value || 0);
+  input.readOnly = true;
+  input.title = 'Auto-calculated from placing';
+  td.appendChild(input);
+  return td;
+}
+
 function createPlacingCell(value, onChange) {
   const td = document.createElement('td');
   const select = document.createElement('select');
@@ -239,7 +269,11 @@ function submitGame() {
   const current = getCurrentEvent();
   const rows = current.entryRows
     .filter((row) => row.player.trim().length > 0)
-    .map((row) => ({ ...row, player: row.player.trim() }));
+    .map((row) => ({
+      ...row,
+      player: row.player.trim(),
+      points: getPointsForPlacing(row.placing)
+    }));
 
   if (rows.length === 0) {
     alert('No players found. Please add at least one player row before submitting.');
@@ -374,13 +408,17 @@ function aggregateRows(rows) {
     item.deaths += Number(row.deaths) || 0;
     item.captures += Number(row.captures) || 0;
     item.timeObjSec += Number(row.timeObjSec) || 0;
-    item.points += Number(row.points) || 0;
+    item.points += getPointsForPlacing(row.placing);
     if (item.placings[row.placing] !== undefined) {
       item.placings[row.placing] += 1;
     }
   });
 
   return [...byPlayer.values()].sort((a, b) => b.points - a.points);
+}
+
+function getPointsForPlacing(placing) {
+  return placingPoints[placing] ?? 0;
 }
 
 function renderResultsTable() {
@@ -484,6 +522,139 @@ function exportData() {
   const a = document.createElement('a');
   a.href = url;
   a.download = `halo-night-stats-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeXml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
+}
+
+function buildSpreadsheetRow(values) {
+  return `<Row>${values
+    .map((v) => `<Cell><Data ss:Type=\"String\">${escapeXml(v)}</Data></Cell>`)
+    .join('')}</Row>`;
+}
+
+function exportCurrentEventExcel() {
+  const current = getCurrentEvent();
+  if (!current) return;
+
+  if (!current.games.length) {
+    alert('This event has no submitted games yet.');
+    return;
+  }
+
+  const flatRows = current.games
+    .slice()
+    .sort((a, b) => a.gameNo - b.gameNo)
+    .flatMap((game) =>
+      game.rows.map((row) => ({
+        gameNo: game.gameNo,
+        date: new Date(game.dateISO).toLocaleString(),
+        player: row.player,
+        kills: Number(row.kills) || 0,
+        assists: Number(row.assists) || 0,
+        deaths: Number(row.deaths) || 0,
+        placing: row.placing || '',
+        points: getPointsForPlacing(row.placing),
+        timeObjSec: Number(row.timeObjSec) || 0,
+        captures: Number(row.captures) || 0
+      }))
+    );
+
+  const totals = aggregateRows(flatRows);
+
+  const xmlHeader = `<?xml version=\"1.0\"?>\n<?mso-application progid=\"Excel.Sheet\"?>`;
+  const workbookStart = `<Workbook xmlns=\"urn:schemas-microsoft-com:office:spreadsheet\" xmlns:o=\"urn:schemas-microsoft-com:office:office\" xmlns:x=\"urn:schemas-microsoft-com:office:excel\" xmlns:ss=\"urn:schemas-microsoft-com:office:spreadsheet\">`;
+  const workbookEnd = '</Workbook>';
+
+  const gameDataSheetRows = [
+    buildSpreadsheetRow([
+      'Game #',
+      'Date',
+      'Player Name',
+      'Kills',
+      'Assists',
+      'Deaths',
+      'Placing',
+      'Points',
+      'Time Obj (sec)',
+      'Captures'
+    ]),
+    ...flatRows.map((r) =>
+      buildSpreadsheetRow([
+        r.gameNo,
+        r.date,
+        r.player,
+        r.kills,
+        r.assists,
+        r.deaths,
+        r.placing,
+        r.points,
+        r.timeObjSec,
+        r.captures
+      ])
+    )
+  ].join('');
+
+  const resultsSheetRows = [
+    buildSpreadsheetRow([
+      'Player',
+      'Total Kills',
+      'Total Assists',
+      'Total Deaths',
+      'K/D',
+      'KDA (A=0.3)',
+      'Captures',
+      'Obj Time (sec)',
+      'Placings',
+      'Total Points'
+    ]),
+    ...totals.map((player) => {
+      const kd = player.deaths > 0 ? (player.kills / player.deaths).toFixed(2) : player.kills.toFixed(2);
+      const kda =
+        player.deaths > 0
+          ? ((player.kills + player.assists * 0.3) / player.deaths).toFixed(2)
+          : (player.kills + player.assists * 0.3).toFixed(2);
+      const placingText = `1st: ${player.placings['1st']}, 2nd: ${player.placings['2nd']}, 3rd: ${player.placings['3rd']}, 4th: ${player.placings['4th']}, 5th: ${player.placings['5th']}, 6th: ${player.placings['6th']}, 7th: ${player.placings['7th']}, 8th: ${player.placings['8th']}`;
+
+      return buildSpreadsheetRow([
+        player.player,
+        player.kills,
+        player.assists,
+        player.deaths,
+        kd,
+        kda,
+        player.captures,
+        player.timeObjSec,
+        placingText,
+        player.points
+      ]);
+    })
+  ].join('');
+
+  const workbookXml = [
+    xmlHeader,
+    workbookStart,
+    `<Worksheet ss:Name=\"Game Data\"><Table>${gameDataSheetRows}</Table></Worksheet>`,
+    `<Worksheet ss:Name=\"Results\"><Table>${resultsSheetRows}</Table></Worksheet>`,
+    workbookEnd
+  ].join('');
+
+  const safeEventName = current.name.replace(/[^a-zA-Z0-9-_]+/g, '_');
+  const fileName = `${safeEventName || 'event'}-${new Date().toISOString().slice(0, 10)}.xls`;
+
+  const blob = new Blob([workbookXml], { type: 'application/vnd.ms-excel' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
   a.click();
   URL.revokeObjectURL(url);
 }
