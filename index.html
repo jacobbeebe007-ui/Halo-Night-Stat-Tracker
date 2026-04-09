@@ -103,6 +103,10 @@
       <section class="card footer-tools">
         <h2>Data Tools</h2>
         <div class="tool-buttons">
+          <label class="import-label">
+            Import Image (OCR)
+            <input id="imageImportInput" type="file" accept="image/*" hidden />
+          </label>
           <button id="exportEventExcelBtn" class="secondary">Export Event (Excel)</button>
           <button id="exportBtn" class="secondary">Export JSON</button>
           <label class="import-label">
@@ -110,9 +114,11 @@
             <input id="importInput" type="file" accept="application/json" hidden />
           </label>
         </div>
+        <p id="ocrStatus" class="hint"></p>
       </section>
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

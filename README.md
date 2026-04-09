@@ -21,6 +21,7 @@ A lightweight, client-side web app for tracking Halo custom night/player stats a
 - Export the active event to an Excel-compatible `.xls` file with:
   - `Game Data` sheet (all submitted rows)
   - `Results` sheet (cumulative totals)
+- Import a scoreboard image using OCR (best-effort mapping into entry rows by player name).
 - Automatic browser persistence using `localStorage`.
 
 ## Run locally
@@ -77,3 +78,4 @@ Top-level shape:
 
 - This is intentionally backend-free for easy startup.
 - If you later want cloud sync/multi-user support, we can add a backend (Supabase/Firebase/Postgres API) without changing the UI much.
+- OCR import uses `tesseract.js` loaded from CDN and may need clean screenshots for best extraction quality.

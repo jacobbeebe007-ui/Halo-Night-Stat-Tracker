@@ -41,6 +41,8 @@ const elements = {
   entryBody: document.getElementById('entryBody'),
   gamesBody: document.getElementById('gamesBody'),
   resultsBody: document.getElementById('resultsBody'),
+  imageImportInput: document.getElementById('imageImportInput'),
+  ocrStatus: document.getElementById('ocrStatus'),
   exportEventExcelBtn: document.getElementById('exportEventExcelBtn'),
   exportBtn: document.getElementById('exportBtn'),
   importInput: document.getElementById('importInput')
@@ -59,6 +61,7 @@ function wireEvents() {
     clearEntryStats();
     renderEntryTable();
   });
+  elements.imageImportInput.addEventListener('change', importFromImage);
   elements.exportEventExcelBtn.addEventListener('click', exportCurrentEventExcel);
   elements.exportBtn.addEventListener('click', exportData);
   elements.importInput.addEventListener('change', importData);
@@ -683,4 +686,110 @@ function importData(event) {
   };
 
   reader.readAsText(file);
+}
+
+function normalizeText(value) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function parseOcrStatsFromLine(line) {
+  const placingMatch = line.match(/\b([1-8](?:st|nd|rd|th))\b/i);
+  const placing = placingMatch ? placingMatch[1].toLowerCase() : '';
+  const normalizedPlacing = placing ? `${parseInt(placing, 10)}${placing.slice(-2)}` : '';
+
+  const numbers = (line.match(/\d+/g) || []).map((n) => Number(n));
+  const kills = numbers[0] ?? 0;
+  const assists = numbers[1] ?? 0;
+  const deaths = numbers[2] ?? 0;
+  const points = normalizedPlacing ? getPointsForPlacing(normalizedPlacing) : numbers[3] ?? 0;
+  const timeObjSec = normalizedPlacing ? numbers[4] ?? 0 : numbers[3] ?? 0;
+  const captures = normalizedPlacing ? numbers[5] ?? 0 : numbers[4] ?? 0;
+
+  return {
+    kills,
+    assists,
+    deaths,
+    placing: normalizedPlacing,
+    points,
+    timeObjSec,
+    captures
+  };
+}
+
+async function importFromImage(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  const current = getCurrentEvent();
+  if (!current) return;
+
+  if (!window.Tesseract) {
+    alert('OCR library failed to load. Check internet connection and try again.');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    elements.ocrStatus.textContent = 'Running OCR… this can take up to ~30 seconds.';
+    const result = await window.Tesseract.recognize(file, 'eng');
+    const text = result?.data?.text || '';
+    const lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    let updates = 0;
+    const unmatchedLines = [];
+    const matchedIndexes = new Set();
+
+    for (const rawLine of lines) {
+      const lineNorm = normalizeText(rawLine);
+      if (!lineNorm) continue;
+
+      let bestMatchIndex = -1;
+      let bestMatchLength = 0;
+
+      current.entryRows.forEach((row, idx) => {
+        if (matchedIndexes.has(idx)) return;
+        const playerNorm = normalizeText(row.player);
+        if (!playerNorm) return;
+        if (lineNorm.includes(playerNorm) && playerNorm.length > bestMatchLength) {
+          bestMatchLength = playerNorm.length;
+          bestMatchIndex = idx;
+        }
+      });
+
+      if (bestMatchIndex === -1) {
+        unmatchedLines.push(rawLine);
+        continue;
+      }
+
+      const parsed = parseOcrStatsFromLine(rawLine);
+      const row = current.entryRows[bestMatchIndex];
+      row.kills = parsed.kills;
+      row.assists = parsed.assists;
+      row.deaths = parsed.deaths;
+      row.placing = parsed.placing;
+      row.points = getPointsForPlacing(parsed.placing);
+      row.timeObjSec = parsed.timeObjSec;
+      row.captures = parsed.captures;
+      matchedIndexes.add(bestMatchIndex);
+      updates += 1;
+    }
+
+    saveState();
+    renderEntryTable();
+
+    const extraMessage = unmatchedLines.length
+      ? ` Unmatched OCR lines: ${unmatchedLines.length}.`
+      : '';
+    elements.ocrStatus.textContent = `OCR import complete. Updated ${updates} player row(s).${extraMessage}`;
+  } catch (error) {
+    elements.ocrStatus.textContent = 'OCR import failed.';
+    alert(`OCR import failed: ${error.message}`);
+  } finally {
+    event.target.value = '';
+  }
 }
