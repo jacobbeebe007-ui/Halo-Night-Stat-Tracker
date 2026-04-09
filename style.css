@@ -1,0 +1,155 @@
+:root {
+  color-scheme: dark;
+  --bg: #111218;
+  --card: #1b1e27;
+  --text: #ecedf3;
+  --muted: #9ea3b5;
+  --accent: #5f86ff;
+  --danger: #d84f4f;
+  --line: #32384a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page-header {
+  padding: 1.25rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: #141722;
+}
+
+.page-header h1 {
+  margin: 0;
+}
+
+.page-header p {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+}
+
+.layout {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 160px 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.7rem;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #12141d;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+button,
+.import-label {
+  border: 1px solid var(--accent);
+  color: #f1f5ff;
+  background: #2448bb;
+  border-radius: 6px;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+}
+
+button.secondary,
+.import-label {
+  background: #283041;
+  border-color: #4e5a77;
+}
+
+button.danger {
+  background: #5d2626;
+  border-color: var(--danger);
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+th,
+td {
+  border: 1px solid var(--line);
+  padding: 0.45rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+thead th {
+  background: #23293a;
+}
+
+.entry-input,
+.entry-select {
+  width: 100%;
+  border: 1px solid #414a62;
+  padding: 0.35rem;
+  border-radius: 5px;
+}
+
+.hint {
+  color: var(--muted);
+  margin-top: -0.2rem;
+}
+
+.tool-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.small-btn {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.9rem;
+  margin-right: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
