@@ -30,10 +30,6 @@ Because this is a static app, you can:
 1. Open `index.html` directly in your browser, or
 2. Serve via any static file server.
 
-## Deploy live
-
-See `DEPLOYMENT.md` for GitHub Pages and Railway options, plus how to enable shared multi-user editing with a backend database.
-
 ## Data model
 
 Data is stored in local storage key:
